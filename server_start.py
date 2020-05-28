@@ -15,6 +15,8 @@ GetValueURL = "http://localhost:22002/NeuLogAPI?GetSensorValue:[GSR],[1],[Pulse]
 START_EXP_URL = "http://localhost:22002/NeuLogAPI?StartExperiment:[GSR],[1],[Pulse],[1]"
 GET_EXP_SAMPL_URL = "http://localhost:22002/NeuLogAPI?GetExperimentSamples"
 STOP_EXP_URL = "http://localhost:22002/NeuLogAPI?StopExperiment"
+SIMULATED_DATA_URL = "http://localhost:8000/NeuLogAPI?start=0&end=60"
+
 WAIT_TIME = 62  # start a new experiment in every 60 second
 NUMBER_OF_SAMPLES = 600  # Total Samples in a minute
 HR = 1
@@ -29,6 +31,15 @@ def get_experiment_data():
     response = requests.get(url=GET_EXP_SAMPL_URL)
     if response.ok:
         return response.json()
+    else:
+        print("Cannot get Data")
+        return False
+
+
+def get_simulated_data():
+    response = requests.get(url=SIMULATED_DATA_URL)
+    if response.ok:
+        print(response.json())
     else:
         print("Cannot get Data")
         return False
@@ -97,7 +108,8 @@ def start_exp():
             test_data.to_csv("data/minute/test_data-" + start_time + "-simulation.csv")
             test_data = dnn.reshape_test_data(test_data)
             predicted_y = dnn.make_prediction(loaded_model, test_data, normalizer_model)
-            np.savetxt("results/minute/predicted.csv", predicted_y, delimiter=",")   # TODO: Make sure it does not ovverride
+            np.savetxt("results/minute/predicted.csv", predicted_y,
+                       delimiter=",")  # TODO: Make sure it does not ovverride
             print("Average Sickness Score: ", np.average(predicted_y))
             logging.info("Simulation Data Saved.")
             stop_experiment()

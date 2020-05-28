@@ -210,6 +210,10 @@ def calculate_rmse_of_predictions(model, test_x, test_y):
     print('Test RMSE: %.3f' % rmse)
 
 
+def cross_validation_split():
+    return
+
+
 def train_data():
     # Load and process train data
     dl_train_data = load_data_from_csv(train_data_file)
