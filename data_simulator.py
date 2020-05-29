@@ -24,6 +24,7 @@ class GetHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         self._set_headers()
+        print("Get Request Received...")
         print("Command: ", self.command)
         print("Path: ", self.path)
         par = urlparse.parse_qs(urlparse.urlparse(self.path).query)
@@ -33,7 +34,9 @@ class GetHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         self.wfile.write(content.encode("utf8"))
 
 
-data = pd.read_csv("raw_data_feature_only.csv", delimiter=',')  # TODO: REPLACE WITH TEST FILE
-Handler = GetHandler
-httpd = SocketServer.TCPServer(("", PORT), Handler)
-httpd.serve_forever()
+if __name__ == '__main__':
+    data = pd.read_csv("test_data_set.csv", delimiter=',')  # TODO: REPLACE WITH TEST FILE
+    Handler = GetHandler
+    httpd = SocketServer.TCPServer(("", PORT), Handler)
+    print("Data Simulator Started...")
+    httpd.serve_forever()

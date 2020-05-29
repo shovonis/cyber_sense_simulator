@@ -6,8 +6,6 @@ from pandas import concat
 from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
-
 
 # Prepare the test data for time step wise distribution
 def prepare_timestep_data(data, lookback=1, dropnan=True):
@@ -34,8 +32,6 @@ def prepare_timestep_data(data, lookback=1, dropnan=True):
 def normalize_test_data(data):
     scaler = MinMaxScaler(feature_range=(0, 1))
     normalized = scaler.fit_transform(data)
-    # joblib.dump(scaler, normalizer_model)  # Save the Scaler to normalize the test data later
-
     return normalized
 
 
@@ -70,15 +66,14 @@ def make_prediction(model, test_x, normalizer_file):
 
 
 def load_model_from_file(file_name):
-    # Session Config
-    config = tf.ConfigProto(
-        gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.8)
-        # device_count = {'GPU': 1}
-    )
+    import tensorflow as tf
+    config = tf.compat.v1.ConfigProto(gpu_options=
+                                      tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
+                                      # device_count = {'GPU': 1}
+                                      )
     config.gpu_options.allow_growth = True
-    session = tf.Session(config=config)
-    tf.get_logger().setLevel('INFO')
-    set_session(session)
+    session = tf.compat.v1.Session(config=config)
+    tf.compat.v1.keras.backend.set_session(session)
 
     # Load model from file
     loaded_model = load_model(file_name + '.h5')
