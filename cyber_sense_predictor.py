@@ -1,32 +1,37 @@
 from datetime import datetime
 import numpy as np
+import tensorflow as tf
 from keras.models import load_model
 from pandas import DataFrame
 from pandas import concat
 from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
-import tensorflow as tf
+
+# Feature and TimeStep setup
+time_step = 60
+number_of_features = 8
+normalizer_model = "dnn-models/normalizer.save"
+dnn_model_file = "dnn-models/lstm_60t_120b"
+
 
 # Prepare the test data for time step wise distribution
 def prepare_timestep_data(data, lookback=1, dropnan=True):
     number_of_var = 1 if type(data) is list else data.shape[1]
     df = DataFrame(data)
     cols, names = list(), list()
-
     # X sequence (t-n, ... t-1)
     for i in range(lookback, 0, -1):
         cols.append(df.shift(i))
         names += [('X%d(t-%d)' % (j + 1, i)) for j in range(number_of_var)]
 
     # put it all together
-    agg = concat(cols, axis=1)
-    agg.columns = names
-
+    aggregated_data = concat(cols, axis=1)
+    aggregated_data.columns = names
     # drop rows with NaN values
     if dropnan:
-        agg.dropna(inplace=True)
+        aggregated_data.dropna(inplace=True)
 
-    return agg
+    return aggregated_data
 
 
 def normalize_test_data(data):
@@ -65,23 +70,31 @@ def make_prediction(model, test_x, normalizer_file):
     return inv_yhat
 
 
-def load_model_from_file(file_name):
-    import tensorflow as tf
-    config = tf.compat.v1.ConfigProto(gpu_options=
-                                      tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
-                                      # device_count = {'GPU': 1}
-                                      )
+def predict_cybersickness(minute_wise_data, model):
+    t = datetime.now()
+    start_time = t.strftime('%m-%d-%Y-%H-%M-%S')
+    normalized_data = normalize_test_data(minute_wise_data)
+    test_data = prepare_timestep_data(data=normalized_data, lookback=time_step)
+    test_data.to_csv("results/test_data-" + start_time + "-simulation.csv")
+    test_data = reshape_test_data(test_data)
+    predicted_y = make_prediction(model, test_data, normalizer_model)
+    np.savetxt("results/predicted.csv", predicted_y, delimiter=",", fmt='%.2f',
+               header='Predicted_Sickness')  # TODO: Make sure it does not ovverride
+    avg_sick_score = "{:.2f}".format(np.average(predicted_y))  # Format for 2 decimal point
+    print("Predicted Average Sickness Score: ", avg_sick_score)
+
+    return str(avg_sick_score)
+
+
+def load_model_from_file():
+    # Tensorflow Config
+    config = tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8))
     config.gpu_options.allow_growth = True
     session = tf.compat.v1.Session(config=config)
     tf.compat.v1.keras.backend.set_session(session)
 
     # Load model from file
-    loaded_model = load_model(file_name + '.h5')
-    print("Loaded Model from disk")
+    loaded_model = load_model(dnn_model_file + '.h5')
+    print("Loaded DNN Model from disk..")
     print(loaded_model.summary())
     return loaded_model
-
-
-############################################ Run the Code ######################################
-time_step = 60
-number_of_features = 8

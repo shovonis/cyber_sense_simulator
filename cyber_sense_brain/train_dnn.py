@@ -1,6 +1,5 @@
 from datetime import datetime
 from math import sqrt
-
 import matplotlib.pyplot as plt
 import numpy as np
 from keras import optimizers
